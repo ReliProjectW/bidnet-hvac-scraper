@@ -353,3 +353,188 @@ class BidNetAuthenticator:
         except Exception as e:
             self.logger.error(f"Authentication test failed: {str(e)}")
             return False
+    
+    def is_login_page(self, driver_or_url=None):
+        """Detect if current page is a login page"""
+        try:
+            if driver_or_url is None and hasattr(self, 'driver') and self.driver:
+                # Check current Selenium page
+                current_url = self.driver.current_url
+                page_title = self.driver.title
+                page_source = self.driver.page_source
+            elif isinstance(driver_or_url, str):
+                # URL string provided
+                current_url = driver_or_url
+                page_title = ""
+                page_source = ""
+            else:
+                # WebDriver provided
+                current_url = driver_or_url.current_url
+                page_title = driver_or_url.title
+                page_source = driver_or_url.page_source
+            
+            # Check URL patterns
+            login_url_patterns = [
+                "login",
+                "authentication", 
+                "sso",
+                "signin",
+                "SAML2"
+            ]
+            
+            # Check title patterns
+            login_title_patterns = [
+                "login",
+                "sign in",
+                "authentication",
+                "sso"
+            ]
+            
+            # Check if URL indicates login page
+            for pattern in login_url_patterns:
+                if pattern.lower() in current_url.lower():
+                    return True
+                    
+            # Check if title indicates login page  
+            for pattern in login_title_patterns:
+                if pattern.lower() in page_title.lower():
+                    return True
+                    
+            # Check for login form elements in page source
+            if page_source and any(pattern in page_source.lower() for pattern in ['j_username', 'j_password', 'name="username"', 'type="password"']):
+                return True
+                
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error checking login page: {str(e)}")
+            return False
+    
+    def auto_login_if_needed(self, driver=None):
+        """Automatically login if we detect we're on a login page"""
+        try:
+            target_driver = driver or self.driver
+            if not target_driver:
+                self.logger.error("No driver available for auto-login")
+                return False
+                
+            if self.is_login_page(target_driver):
+                self.logger.info("🔄 Login page detected - attempting automatic login")
+                
+                # Use existing login logic but with current driver
+                old_driver = self.driver
+                self.driver = target_driver
+                
+                try:
+                    success = self._perform_login_on_current_page()
+                    if success:
+                        self.logger.info("✅ Auto-login successful")
+                        return True
+                    else:
+                        self.logger.error("❌ Auto-login failed")
+                        return False
+                finally:
+                    self.driver = old_driver
+            else:
+                # Not on login page, we're good
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Auto-login error: {str(e)}")
+            return False
+    
+    def _perform_login_on_current_page(self):
+        """Perform login on current page (assumes we're already on login page)"""
+        try:
+            wait = WebDriverWait(self.driver, 20)
+            
+            # Look for username field
+            username_selectors = [
+                "input[name='j_username']",
+                "input[id='j_username']",
+                "input[name='username']",
+                "input[type='email']",
+                "input[id*='username']",
+                "#username"
+            ]
+            
+            username_field = None
+            for selector in username_selectors:
+                try:
+                    username_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                    break
+                except TimeoutException:
+                    continue
+                    
+            if not username_field:
+                self.logger.error("Could not find username field")
+                return False
+                
+            # Look for password field
+            password_selectors = [
+                "input[name='j_password']",
+                "input[id='j_password']", 
+                "input[name='password']",
+                "input[type='password']",
+                "#password"
+            ]
+            
+            password_field = None
+            for selector in password_selectors:
+                try:
+                    password_field = self.driver.find_element(By.CSS_SELECTOR, selector)
+                    break
+                except:
+                    continue
+                    
+            if not password_field:
+                self.logger.error("Could not find password field")
+                return False
+                
+            # Enter credentials
+            self.logger.info("Entering credentials")
+            username_field.clear()
+            username_field.send_keys(Config.USERNAME)
+            
+            password_field.clear() 
+            password_field.send_keys(Config.PASSWORD)
+            
+            # Find and click submit button
+            submit_selectors = [
+                "input[type='submit']",
+                "button[type='submit']", 
+                "button:contains('Sign In')",
+                "button:contains('Login')",
+                ".login-button",
+                "#loginButton"
+            ]
+            
+            submit_button = None
+            for selector in submit_selectors:
+                try:
+                    submit_button = self.driver.find_element(By.CSS_SELECTOR, selector)
+                    break
+                except:
+                    continue
+                    
+            if submit_button:
+                self.logger.info("Clicking login button")
+                submit_button.click()
+            else:
+                # Try form submission
+                password_field.submit()
+                
+            # Wait for redirect
+            time.sleep(5)
+            
+            # Check if login was successful
+            if not self.is_login_page(self.driver):
+                self.logger.info("Login successful - no longer on login page")
+                return True
+            else:
+                self.logger.error("Login may have failed - still on login page")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Login on current page failed: {str(e)}")
+            return False

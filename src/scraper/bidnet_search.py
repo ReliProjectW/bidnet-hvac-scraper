@@ -75,15 +75,33 @@ class BidNetSearcher:
             self.logger.info(f"Navigating to search page with browser: {search_url}")
             browser.get(search_url)
             
+            # Wait for page to load
+            time.sleep(3)
+            
+            # Check if we got redirected to login page and handle it
+            if not self.authenticator.auto_login_if_needed(browser):
+                self.logger.error("Auto-login failed")
+                return contracts
+            
+            # If we had to login, navigate to search page again
+            if browser.current_url != search_url:
+                self.logger.info("Re-navigating to search page after login")
+                browser.get(search_url)
+                time.sleep(3)
+            
             # Wait for page to load (reduced timeout)
             wait = WebDriverWait(browser, 5)
             
             # Look for search input fields
             search_field = None
             search_selectors = [
+                'textarea#solicitationSingleBoxSearch',  # BidNet specific main search
+                'textarea[name="keywords"]',              # BidNet specific
                 'input[name*="search"]',
                 'input[name*="keyword"]',
                 'input[name*="query"]',
+                'textarea[placeholder*="search"]',
+                'textarea[placeholder*="keyword"]',
                 'input[placeholder*="search"]',
                 'input[placeholder*="keyword"]',
                 '#search',
@@ -102,12 +120,22 @@ class BidNetSearcher:
                     
             if search_field:
                 self.logger.info(f"Found search field, entering keyword: {keyword}")
-                search_field.clear()
-                search_field.send_keys(keyword)
+                # Wait for field to be clickable and clear
+                try:
+                    wait.until(EC.element_to_be_clickable(search_field))
+                    search_field.clear()
+                    time.sleep(1)  # Small pause after clear
+                    search_field.send_keys(keyword)
+                except Exception as e:
+                    self.logger.error(f"Failed to enter search term: {str(e)}")
+                    # Try JavaScript input as fallback
+                    browser.execute_script(f"arguments[0].value = '{keyword}';", search_field)
                 
                 # Look for search button
                 search_button = None
                 button_selectors = [
+                    'button#topSearchButton',                 # BidNet specific
+                    'button.topSearch',                       # BidNet specific  
                     'button[type="submit"]',
                     'input[type="submit"]',
                     'button:contains("Search")',
