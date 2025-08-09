@@ -1,0 +1,32 @@
+# Web scraping and HTTP requests
+requests
+selenium
+beautifulsoup4
+
+# PDF processing
+PyPDF2
+pdfplumber
+
+# Configuration and logging
+python-dotenv
+pyyaml
+
+# Data handling
+pandas
+openpyxl
+sqlalchemy
+
+# Geographic processing
+geopy
+
+# AI/ML integration (optional for self-learning)
+scikit-learn
+
+# API clients (for future AI agent integration)
+requests
+httpx
+
+# Utilities
+tqdm
+click
+tabulate
