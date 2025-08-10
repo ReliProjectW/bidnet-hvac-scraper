@@ -296,8 +296,17 @@ class BidNetSearcher:
                 self.logger.debug(f"Could not count page rows: {e}")
             
             if not page_contracts:
-                self.logger.info(f"No contracts found on page {page_num}, ending pagination")
-                break
+                empty_pages = getattr(self, '_empty_page_count', 0) + 1
+                setattr(self, '_empty_page_count', empty_pages)
+                self.logger.info(f"No contracts found on page {page_num} (empty pages: {empty_pages})")
+                
+                # Only stop pagination after 2 consecutive empty pages, but ensure we check at least 3 pages
+                if empty_pages >= 2 and page_num >= 3:
+                    self.logger.info(f"Ending pagination after {empty_pages} consecutive empty pages")
+                    break
+            else:
+                # Reset empty page counter when we find contracts
+                setattr(self, '_empty_page_count', 0)
                 
             all_contracts.extend(page_contracts)
             self.logger.info(f"Found {len(page_contracts)} contracts on page {page_num} (total: {len(all_contracts)})")
@@ -309,12 +318,14 @@ class BidNetSearcher:
                 'a[class*="next"]',                             # Class contains "next"
                 'a[title*="Next"]',                             # Title contains "Next"
                 'a[aria-label*="Next"]',                        # Aria label contains "Next"
-                f'a[href*="pageNumber={page + 1}"]',           # Direct page number link
+                f'a[href*="pageNumber={page_num + 1}"]',       # Direct page number link (fixed variable name)
                 '.mets-pagination-page-icon.next',             # BidNet specific pagination
                 'a.next',                                       # Simple next class
                 'button[title*="Next"]',
                 '.pagination a:contains("Next")',
-                '[data-testid="next"]'
+                '[data-testid="next"]',
+                f'a[href*="&pageNumber={page_num + 1}"]',      # Alternative page number format
+                f'a:has-text("{page_num + 1}")'                # Link containing next page number
             ]
             
             for selector in next_selectors:
@@ -672,7 +683,23 @@ class BidNetSearcher:
                             title = text
                             break
             
-            contract['title'] = title or 'No title found'
+            # Filter out invalid/empty results
+            if not title or len(title.strip()) < 5:
+                return None
+                
+            # Filter out common "no results" messages
+            invalid_titles = [
+                'no results match your criteria',
+                'no title found',
+                'no results found',
+                'no data available',
+                'search returned no results'
+            ]
+            
+            if any(invalid_phrase in title.lower() for invalid_phrase in invalid_titles):
+                return None
+                
+            contract['title'] = title
             
             # Enhanced agency extraction
             agency_selectors = [

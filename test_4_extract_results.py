@@ -60,18 +60,66 @@ def test_extract_results():
         page.goto(Config.BASE_URL)
         page.wait_for_load_state("networkidle")
         
-        # Auto-login if on login page
-        if authenticator.is_login_page(page):
-            logger.info("🔑 Login required - performing auto-login...")
-            if not authenticator.auto_login_if_needed(page):
-                logger.error("❌ Auto-login failed")
+        # Use the same successful login approach as combined test
+        # Navigate directly to login URL
+        login_url = "https://www.bidnetdirect.com/public/authentication/login"
+        logger.info(f"Navigating directly to login page: {login_url}")
+        page.goto(login_url)
+        
+        # Wait for page to load
+        page.wait_for_load_state("domcontentloaded", timeout=15000)
+        page.wait_for_timeout(3000)
+        
+        logger.info(f"After navigation - Current URL: {page.url}")
+        logger.info(f"After navigation - Page title: {page.title()}")
+        
+        # Use manual login logic from combined test
+        try:
+            # Wait for login fields to appear
+            page.wait_for_selector("input[name='j_username']", timeout=10000)
+            page.wait_for_selector("input[name='j_password']", timeout=10000)
+            
+            # Enter credentials manually
+            username_element = page.locator("input[name='j_username']").first
+            password_element = page.locator("input[name='j_password']").first
+            
+            if username_element.is_visible() and password_element.is_visible():
+                logger.info("Entering credentials")
+                username_element.clear()
+                username_element.fill(Config.USERNAME)
+                password_element.clear()
+                password_element.fill(Config.PASSWORD)
+                
+                # Click login button
+                login_button = page.locator("button[type='submit']").first
+                logger.info("Clicking login button")
+                login_button.click()
+                
+                # Wait a reasonable time but don't fail if timeout
+                try:
+                    page.wait_for_load_state("networkidle", timeout=10000)
+                except:
+                    logger.info("Login may have succeeded despite timeout")
+                
+                logger.info("✅ Login attempt completed")
+            else:
+                logger.error("❌ Could not find login fields")
                 return False
+                
+        except Exception as e:
+            logger.warning(f"Login had issues but continuing: {e}")
         
         # Navigate to search page
         search_url = f"{Config.BASE_URL}private/supplier/solicitations/search"
         logger.info(f"Navigating to search page: {search_url}")
-        page.goto(search_url)
-        page.wait_for_load_state("networkidle")
+        try:
+            page.goto(search_url, timeout=15000)
+            page.wait_for_load_state("domcontentloaded", timeout=10000)
+        except Exception as e:
+            logger.warning(f"Navigation timeout, but continuing: {e}")
+        
+        # Wait a bit more for any dynamic content
+        time.sleep(3)
         
         # Check if we got redirected to login again
         if authenticator.is_login_page(page):
@@ -142,9 +190,13 @@ def test_extract_results():
         else:
             search_element.press("Enter")
         
-        # Wait for results
-        page.wait_for_load_state("networkidle")
-        time.sleep(3)
+        # Wait for results with improved timeout handling
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=15000)
+        except:
+            logger.info("Search results loading timeout, but continuing...")
+        
+        time.sleep(5)  # Extra wait for dynamic content to load
         
         # Extract results from all pages
         logger.info("Starting result extraction...")
