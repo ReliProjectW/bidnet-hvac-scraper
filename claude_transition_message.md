@@ -1,9 +1,34 @@
 # 🤖 Transition Message for Next Claude Session
 
-Hi Claude! I'm transitioning a working BidNet HVAC scraper project to you. Here's what you need to know:
+Hi Claude! I'm transitioning a working BidNet HVAC scraper project to you. **IMPORTANT**: This scraper is **Phase 1 of a larger hybrid AI + traditional system**. Here's what you need to know:
 
-## ✅ Current Status: WORKING PERFECTLY
-The BidNet HVAC scraper is **100% functional and production-ready**. The core mission has been accomplished:
+## 🎯 ORIGINAL PROJECT GOAL - HYBRID AI + TRADITIONAL APPROACH
+
+This BidNet scraper is the foundation for a larger hybrid system:
+
+### 🔄 HYBRID APPROACH IMPLEMENTATION:
+- **Phase 1**: ✅ AI discovery of BidNet patterns (one-time ~$10-20) **← COMPLETED**  
+- **Phase 2**: Fast Playwright scraping with AI-discovered patterns (daily, nearly free) **← NEXT STEP**
+- **Phase 3**: Auto-healing when sites change (~$5-10 every few months) **← FUTURE**
+
+### 🎯 SYSTEM OVERVIEW TO IMPLEMENT:
+- **Geographic filtering** for LA region + south to Mexico border
+- **Multi-layer extraction**: BidNet → City RFP pages → PDF downloads
+- **Manual selection** and batch processing for credit conservation  
+- **SQLite database** for tracking contracts and processing status
+
+### 🚀 NEW FEATURES NEEDED FOR HYBRID SYSTEM:
+- **AI agent integration** for discovering site patterns
+- **City-specific scraper generation** and storage
+- **Fallback system** when traditional scrapers fail
+- **Manual contract selection interface** for testing
+- **Cost tracking and credit management**
+- **Self-learning system** that updates patterns when sites change
+
+---
+
+## ✅ Current Status: PHASE 1 COMPLETE
+The BidNet HVAC scraper foundation is **100% functional and production-ready**. The core mission has been accomplished:
 
 - **Scraper Performance**: Extracts exactly 53/53 HVAC contracts with perfect validation
 - **Data Quality**: Zero duplicates, clean filtered results
@@ -36,15 +61,25 @@ Output files: /Users/christophernguyen/Documents/hvacscraper/hvac_contracts_full
 - **`HANDOFF_TO_NEXT_CLAUDE.md`** - Detailed technical handoff
 - **GitHub Repository**: All code is committed and pushed
 
-## 🚀 Ready for Next Phase
-The core HVAC extraction is **complete and working perfectly**. You can now focus on next-level development like:
-- Additional search terms/contract types
-- Data analysis and processing  
-- Automation and scheduling
-- System integrations
-- Performance enhancements
+## 🚀 Ready for PHASE 2: HYBRID AI SYSTEM IMPLEMENTATION
 
-**Key Point**: Don't spend time debugging basic functionality - it works! Focus on new features and next steps.
+The core BidNet extraction (Phase 1) is **complete and working perfectly**. Now focus on implementing the **hybrid AI + traditional approach**:
+
+### 🎯 IMMEDIATE NEXT STEPS (Phase 2):
+1. **AI agent integration** for discovering city RFP site patterns
+2. **Geographic filtering** for LA region + south to Mexico border  
+3. **Multi-layer extraction**: BidNet → City RFP pages → PDF downloads
+4. **SQLite database** for tracking contracts and processing status
+5. **Manual selection interface** for cost-effective batch processing
+
+### 💡 ARCHITECTURE APPROACH:
+- Use existing BidNet scraper as foundation (don't modify - it works!)
+- Build AI pattern discovery system for city websites
+- Create fallback mechanisms when traditional scrapers fail
+- Implement cost tracking and credit management
+- Design self-healing system for when sites change
+
+**Key Point**: Don't spend time debugging basic BidNet functionality - it works perfectly! Focus on building the hybrid AI system on top of this solid foundation.
 
 ## 🔧 Quick Test Command
 To verify everything works:

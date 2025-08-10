@@ -1,7 +1,42 @@
 # 🔄 Claude Handoff Document - BidNet HVAC Scraper
 
 ## 📋 Project Context
-This is a web scraper for BidNet Direct that extracts HVAC contract opportunities. The project has been successfully developed and the **core functionality is now 100% working**.
+This is a **BidNet Direct HVAC scraper** that is **Phase 1 of a larger hybrid AI + traditional system**. The current scraper is 100% working and ready for the next development phase.
+
+## 🎯 ORIGINAL PROJECT GOAL - HYBRID AI + TRADITIONAL APPROACH
+
+**IMPORTANT**: This BidNet scraper is the foundation for a larger hybrid system with this architecture:
+
+### 🔄 HYBRID APPROACH IMPLEMENTATION:
+- **Phase 1**: ✅ AI discovery of BidNet patterns (one-time ~$10-20) **← COMPLETED**
+- **Phase 2**: Fast Playwright scraping with AI-discovered patterns (daily, nearly free) **← NEXT STEP**  
+- **Phase 3**: Auto-healing when sites change (~$5-10 every few months) **← FUTURE**
+
+### 🎯 SYSTEM OVERVIEW TO IMPLEMENT:
+- **Geographic filtering** for LA region + south to Mexico border
+- **Multi-layer extraction**: BidNet → City RFP pages → PDF downloads  
+- **Manual selection** and batch processing for credit conservation
+- **SQLite database** for tracking contracts and processing status
+
+### ✅ EXISTING FEATURES TO PRESERVE (Already Working):
+- **Playwright browser automation** (upgraded and working)
+- **Cookie-based fast authentication** 
+- **Excel/CSV output** for contract data
+- **HVAC keyword filtering** (installation/replacement, NOT maintenance)
+- **Southern California geographic boundaries**
+
+### 🚀 NEW FEATURES NEEDED FOR HYBRID SYSTEM:
+- **AI agent integration** for discovering site patterns
+- **City-specific scraper generation** and storage
+- **Fallback system** when traditional scrapers fail  
+- **Manual contract selection interface** for testing
+- **Cost tracking and credit management**
+- **Self-learning system** that updates patterns when sites change
+
+---
+
+## 📋 CURRENT STATUS (Phase 1 Complete)
+The BidNet Direct scraper foundation has been successfully developed and the **core functionality is now 100% working**.
 
 ## ✅ What's COMPLETED & Working Perfectly
 The HVAC scraper is **production-ready** with these features:
