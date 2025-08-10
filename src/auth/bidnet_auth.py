@@ -3,14 +3,8 @@ import logging
 import json
 import os
 from pathlib import Path
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 import requests
 
 from config import Config
@@ -18,29 +12,45 @@ from config import Config
 class BidNetAuthenticator:
     def __init__(self):
         self.session = requests.Session()
-        self.driver = None
+        self.page = None
+        self.browser = None
+        self.context = None
+        self.playwright = None
         self.authenticated = False
         self.logger = logging.getLogger(__name__)
         self.cookies_file = Path(Config.DATA_DIR) / "bidnet_cookies.json"
         
-    def setup_driver(self):
-        """Set up Chrome WebDriver with appropriate options"""
-        chrome_options = Options()
-        
-        if Config.BROWSER_SETTINGS["headless"]:
-            chrome_options.add_argument("--headless")
+    def setup_browser(self):
+        """Set up Playwright browser with appropriate options"""
+        if self.browser:
+            return self.browser, self.context, self.page
             
-        chrome_options.add_argument(f"--window-size={Config.BROWSER_SETTINGS['window_size'][0]},{Config.BROWSER_SETTINGS['window_size'][1]}")
-        chrome_options.add_argument(f"--user-agent={Config.BROWSER_SETTINGS['user_agent']}")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-extensions")
+        self.playwright = sync_playwright().start()
         
-        # Initialize the driver with webdriver-manager
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.driver.implicitly_wait(10)
+        # Launch browser with options similar to Selenium config
+        self.browser = self.playwright.chromium.launch(
+            headless=Config.BROWSER_SETTINGS.get("headless", False),
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage", 
+                "--disable-gpu",
+                "--disable-extensions"
+            ]
+        )
+        
+        # Create context with user agent and viewport
+        self.context = self.browser.new_context(
+            user_agent=Config.BROWSER_SETTINGS.get("user_agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"),
+            viewport={
+                'width': Config.BROWSER_SETTINGS.get("window_size", [1920, 1080])[0],
+                'height': Config.BROWSER_SETTINGS.get("window_size", [1920, 1080])[1]
+            }
+        )
+        
+        # Create new page
+        self.page = self.context.new_page()
+        
+        return self.browser, self.context, self.page
         
     def save_cookies(self):
         """Save cookies to file for reuse"""
@@ -48,12 +58,12 @@ class BidNetAuthenticator:
             # Ensure data directory exists
             Path(Config.DATA_DIR).mkdir(exist_ok=True)
             
-            # Get cookies from both Selenium and requests session
-            selenium_cookies = self.driver.get_cookies() if self.driver else []
+            # Get cookies from both Playwright and requests session
+            playwright_cookies = self.context.cookies() if self.context else []
             requests_cookies = dict(self.session.cookies)
             
             cookie_data = {
-                "selenium_cookies": selenium_cookies,
+                "playwright_cookies": playwright_cookies,
                 "requests_cookies": requests_cookies,
                 "timestamp": time.time()
             }
@@ -95,8 +105,8 @@ class BidNetAuthenticator:
             self.logger.error(f"Failed to load cookies: {str(e)}")
             return False
             
-    def load_cookies_to_selenium(self):
-        """Load saved cookies into Selenium driver"""
+    def load_cookies_to_playwright(self):
+        """Load saved cookies into Playwright context"""
         try:
             if not self.cookies_file.exists():
                 return False
@@ -104,26 +114,34 @@ class BidNetAuthenticator:
             with open(self.cookies_file, 'r') as f:
                 cookie_data = json.load(f)
                 
-            selenium_cookies = cookie_data.get("selenium_cookies", [])
+            playwright_cookies = cookie_data.get("playwright_cookies", [])
             
-            # Navigate to domain first before setting cookies
-            self.driver.get(Config.BASE_URL)
+            if not playwright_cookies:
+                # Try to convert old selenium cookies if they exist
+                selenium_cookies = cookie_data.get("selenium_cookies", [])
+                for cookie in selenium_cookies:
+                    playwright_cookie = {
+                        'name': cookie.get('name'),
+                        'value': cookie.get('value'),
+                        'url': f"https://{cookie.get('domain', '')}" if cookie.get('domain') else Config.BASE_URL,
+                        'domain': cookie.get('domain'),
+                        'path': cookie.get('path', '/'),
+                    }
+                    if cookie.get('secure') is not None:
+                        playwright_cookie['secure'] = cookie.get('secure')
+                    if cookie.get('httpOnly') is not None:
+                        playwright_cookie['httpOnly'] = cookie.get('httpOnly')
+                    playwright_cookies.append(playwright_cookie)
             
-            # Add each cookie to the driver
-            for cookie in selenium_cookies:
-                try:
-                    # Remove keys that Selenium doesn't accept
-                    cookie_clean = {k: v for k, v in cookie.items() 
-                                  if k in ['name', 'value', 'domain', 'path', 'secure', 'httpOnly']}
-                    self.driver.add_cookie(cookie_clean)
-                except Exception as e:
-                    self.logger.debug(f"Could not add cookie {cookie.get('name', 'unknown')}: {str(e)}")
-                    
-            self.logger.info("Cookies loaded into Selenium driver")
-            return True
+            if playwright_cookies and self.context:
+                self.context.add_cookies(playwright_cookies)
+                self.logger.info("Cookies loaded into Playwright context")
+                return True
+            
+            return False
             
         except Exception as e:
-            self.logger.error(f"Failed to load cookies to Selenium: {str(e)}")
+            self.logger.error(f"Failed to load cookies to Playwright: {str(e)}")
             return False
         
     def login(self):
@@ -132,63 +150,25 @@ class BidNetAuthenticator:
             raise ValueError("Username and password must be set in environment variables")
             
         try:
-            self.setup_driver()
+            browser, context, page = self.setup_browser()
             self.logger.info("Starting BidNet Direct authentication")
             
-            # Navigate to main page first
-            self.driver.get(Config.BASE_URL)
-            self.logger.info(f"Navigated to main page: {Config.BASE_URL}")
+            # Navigate directly to login URL (since we know it works)
+            login_url = "https://www.bidnetdirect.com/public/authentication/login"
+            self.logger.info(f"Navigating directly to login page: {login_url}")
+            page.goto(login_url)
             
-            # Wait for page to load
-            wait = WebDriverWait(self.driver, 20)
-            
-            # Debug: Print page title and URL
-            self.logger.info(f"Page title: {self.driver.title}")
-            self.logger.info(f"Current URL: {self.driver.current_url}")
-            
-            # Find and click the Login button
-            login_link_selectors = [
-                "a[href*='login']",
-                "a:contains('Login')",
-                "button:contains('Login')",
-                ".login",
-                "#login",
-                "[data-testid*='login']",
-                "a[title*='Login']"
-            ]
-            
-            login_link = None
-            for selector in login_link_selectors:
-                try:
-                    if ":contains(" in selector:
-                        # Use XPath for text-based selectors
-                        xpath = f"//a[contains(text(), 'Login')] | //button[contains(text(), 'Login')]"
-                        login_link = self.driver.find_element(By.XPATH, xpath)
-                    else:
-                        login_link = self.driver.find_element(By.CSS_SELECTOR, selector)
-                    break
-                except NoSuchElementException:
-                    continue
-                    
-            if not login_link:
-                self.logger.error("Could not find login button on main page")
-                return False
-                
-            # Wait for login button to be clickable and click
-            self.logger.info("Found login button, waiting for it to be clickable...")
+            # Wait for page to load with longer timeout for SAML redirect
             try:
-                clickable_login = wait.until(EC.element_to_be_clickable(login_link))
-                clickable_login.click()
-            except TimeoutException:
-                # Try JavaScript click as fallback
-                self.logger.info("Normal click failed, trying JavaScript click...")
-                self.driver.execute_script("arguments[0].click();", login_link)
+                page.wait_for_load_state("domcontentloaded", timeout=15000)
+            except:
+                self.logger.warning("Page load timeout, continuing...")
             
-            # Wait for redirect to login page
-            time.sleep(3)
+            # Wait a bit for any redirects to complete
+            page.wait_for_timeout(3000)
             
-            self.logger.info(f"After login click - Current URL: {self.driver.current_url}")
-            self.logger.info(f"After login click - Page title: {self.driver.title}")
+            self.logger.info(f"After navigation - Current URL: {page.url}")
+            self.logger.info(f"After navigation - Page title: {page.title()}")
             
             # Now look for username field on the login page
             username_selectors = [
@@ -203,16 +183,25 @@ class BidNetAuthenticator:
                 "#email"
             ]
             
-            username_field = None
+            username_element = None
             for selector in username_selectors:
                 try:
-                    username_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
-                    break
-                except TimeoutException:
+                    page.wait_for_selector(selector, timeout=10000)
+                    if page.locator(selector).first.is_visible():
+                        username_element = page.locator(selector).first
+                        self.logger.info(f"Found username field with selector: {selector}")
+                        break
+                except:
                     continue
                     
-            if not username_field:
+            if not username_element:
                 self.logger.error("Could not find username field")
+                # Take a screenshot for debugging
+                try:
+                    page.screenshot(path="debug_login_page.png")
+                    self.logger.info("Screenshot saved as debug_login_page.png")
+                except:
+                    pass
                 return False
                 
             # Look for password field
@@ -225,25 +214,28 @@ class BidNetAuthenticator:
                 "#password"
             ]
             
-            password_field = None
+            password_element = None
             for selector in password_selectors:
                 try:
-                    password_field = self.driver.find_element(By.CSS_SELECTOR, selector)
-                    break
-                except NoSuchElementException:
+                    page.wait_for_selector(selector, timeout=5000)
+                    if page.locator(selector).first.is_visible():
+                        password_element = page.locator(selector).first
+                        self.logger.info(f"Found password field with selector: {selector}")
+                        break
+                except:
                     continue
                     
-            if not password_field:
+            if not password_element:
                 self.logger.error("Could not find password field")
                 return False
                 
             # Enter credentials
             self.logger.info("Entering credentials")
-            username_field.clear()
-            username_field.send_keys(Config.USERNAME)
+            username_element.clear()
+            username_element.fill(Config.USERNAME)
             
-            password_field.clear() 
-            password_field.send_keys(Config.PASSWORD)
+            password_element.clear()
+            password_element.fill(Config.PASSWORD)
             
             # Find and click login button
             login_selectors = [
@@ -255,32 +247,41 @@ class BidNetAuthenticator:
                 "#login-button"
             ]
             
-            login_button = None
+            login_button_element = None
             for selector in login_selectors:
                 try:
-                    login_button = self.driver.find_element(By.CSS_SELECTOR, selector)
-                    break
-                except NoSuchElementException:
+                    page.wait_for_selector(selector, timeout=5000)
+                    if page.locator(selector).first.is_visible():
+                        login_button_element = page.locator(selector).first
+                        self.logger.info(f"Found login button with selector: {selector}")
+                        break
+                except:
                     continue
                     
-            if not login_button:
-                self.logger.error("Could not find login button")
-                return False
-                
-            # Click login
-            self.logger.info("Clicking login button")
-            login_button.click()
+            if not login_button_element:
+                self.logger.warning("Could not find login button, will try pressing Enter on password field")
+                # Try pressing Enter on password field as fallback
+                try:
+                    password_element.press("Enter")
+                    self.logger.info("Pressed Enter on password field")
+                except:
+                    self.logger.error("Could not find login button and Enter key failed")
+                    return False
+            else:
+                # Click login
+                self.logger.info("Clicking login button")
+                login_button_element.click()
             
             # Wait for redirect/authentication to complete
-            time.sleep(5)
+            page.wait_for_load_state("networkidle")
             
             # Check if we're successfully authenticated
-            current_url = self.driver.current_url
+            current_url = page.url
             self.logger.info(f"Current URL after login: {current_url}")
             
             # Transfer cookies to requests session
-            selenium_cookies = self.driver.get_cookies()
-            for cookie in selenium_cookies:
+            playwright_cookies = context.cookies()
+            for cookie in playwright_cookies:
                 self.session.cookies.set(cookie['name'], cookie['value'])
                 
             self.authenticated = True
@@ -295,8 +296,25 @@ class BidNetAuthenticator:
             self.logger.error(f"Authentication failed: {str(e)}")
             return False
         finally:
-            if self.driver:
-                self.driver.quit()
+            self.cleanup()
+    
+    def cleanup(self):
+        """Clean up Playwright resources"""
+        try:
+            if self.page:
+                self.page.close()
+                self.page = None
+            if self.context:
+                self.context.close()
+                self.context = None
+            if self.browser:
+                self.browser.close()
+                self.browser = None
+            if self.playwright:
+                self.playwright.stop()
+                self.playwright = None
+        except Exception as e:
+            self.logger.debug(f"Error during cleanup: {e}")
                 
     def authenticate_with_cookies(self):
         """Try to authenticate using saved cookies"""
@@ -354,24 +372,24 @@ class BidNetAuthenticator:
             self.logger.error(f"Authentication test failed: {str(e)}")
             return False
     
-    def is_login_page(self, driver_or_url=None):
+    def is_login_page(self, page_or_url=None):
         """Detect if current page is a login page"""
         try:
-            if driver_or_url is None and hasattr(self, 'driver') and self.driver:
-                # Check current Selenium page
-                current_url = self.driver.current_url
-                page_title = self.driver.title
-                page_source = self.driver.page_source
-            elif isinstance(driver_or_url, str):
+            if page_or_url is None and hasattr(self, 'page') and self.page:
+                # Check current Playwright page
+                current_url = self.page.url
+                page_title = self.page.title()
+                page_source = self.page.content()
+            elif isinstance(page_or_url, str):
                 # URL string provided
-                current_url = driver_or_url
+                current_url = page_or_url
                 page_title = ""
                 page_source = ""
             else:
-                # WebDriver provided
-                current_url = driver_or_url.current_url
-                page_title = driver_or_url.title
-                page_source = driver_or_url.page_source
+                # Playwright Page provided
+                current_url = page_or_url.url
+                page_title = page_or_url.title()
+                page_source = page_or_url.content()
             
             # Check URL patterns
             login_url_patterns = [
@@ -410,20 +428,20 @@ class BidNetAuthenticator:
             self.logger.error(f"Error checking login page: {str(e)}")
             return False
     
-    def auto_login_if_needed(self, driver=None):
+    def auto_login_if_needed(self, page=None):
         """Automatically login if we detect we're on a login page"""
         try:
-            target_driver = driver or self.driver
-            if not target_driver:
-                self.logger.error("No driver available for auto-login")
+            target_page = page or self.page
+            if not target_page:
+                self.logger.error("No page available for auto-login")
                 return False
                 
-            if self.is_login_page(target_driver):
+            if self.is_login_page(target_page):
                 self.logger.info("🔄 Login page detected - attempting automatic login")
                 
-                # Use existing login logic but with current driver
-                old_driver = self.driver
-                self.driver = target_driver
+                # Use existing login logic but with current page
+                old_page = self.page
+                self.page = target_page
                 
                 try:
                     success = self._perform_login_on_current_page()
@@ -434,7 +452,7 @@ class BidNetAuthenticator:
                         self.logger.error("❌ Auto-login failed")
                         return False
                 finally:
-                    self.driver = old_driver
+                    self.page = old_page
             else:
                 # Not on login page, we're good
                 return True
@@ -446,8 +464,6 @@ class BidNetAuthenticator:
     def _perform_login_on_current_page(self):
         """Perform login on current page (assumes we're already on login page)"""
         try:
-            wait = WebDriverWait(self.driver, 20)
-            
             # Look for username field
             username_selectors = [
                 "input[name='j_username']",
@@ -458,15 +474,16 @@ class BidNetAuthenticator:
                 "#username"
             ]
             
-            username_field = None
+            username_element = None
             for selector in username_selectors:
                 try:
-                    username_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
-                    break
-                except TimeoutException:
+                    if self.page.locator(selector).first.is_visible(timeout=5000):
+                        username_element = self.page.locator(selector).first
+                        break
+                except:
                     continue
                     
-            if not username_field:
+            if not username_element:
                 self.logger.error("Could not find username field")
                 return False
                 
@@ -479,56 +496,58 @@ class BidNetAuthenticator:
                 "#password"
             ]
             
-            password_field = None
+            password_element = None
             for selector in password_selectors:
                 try:
-                    password_field = self.driver.find_element(By.CSS_SELECTOR, selector)
-                    break
+                    if self.page.locator(selector).first.is_visible(timeout=2000):
+                        password_element = self.page.locator(selector).first
+                        break
                 except:
                     continue
                     
-            if not password_field:
+            if not password_element:
                 self.logger.error("Could not find password field")
                 return False
                 
             # Enter credentials
             self.logger.info("Entering credentials")
-            username_field.clear()
-            username_field.send_keys(Config.USERNAME)
+            username_element.clear()
+            username_element.fill(Config.USERNAME)
             
-            password_field.clear() 
-            password_field.send_keys(Config.PASSWORD)
+            password_element.clear()
+            password_element.fill(Config.PASSWORD)
             
             # Find and click submit button
             submit_selectors = [
                 "input[type='submit']",
                 "button[type='submit']", 
-                "button:contains('Sign In')",
-                "button:contains('Login')",
+                "button:has-text('Sign In')",
+                "button:has-text('Login')",
                 ".login-button",
                 "#loginButton"
             ]
             
-            submit_button = None
+            submit_element = None
             for selector in submit_selectors:
                 try:
-                    submit_button = self.driver.find_element(By.CSS_SELECTOR, selector)
-                    break
+                    if self.page.locator(selector).first.is_visible(timeout=2000):
+                        submit_element = self.page.locator(selector).first
+                        break
                 except:
                     continue
                     
-            if submit_button:
+            if submit_element:
                 self.logger.info("Clicking login button")
-                submit_button.click()
+                submit_element.click()
             else:
-                # Try form submission
-                password_field.submit()
+                # Try pressing Enter on password field
+                password_element.press("Enter")
                 
             # Wait for redirect
-            time.sleep(5)
+            self.page.wait_for_load_state("networkidle")
             
             # Check if login was successful
-            if not self.is_login_page(self.driver):
+            if not self.is_login_page(self.page):
                 self.logger.info("Login successful - no longer on login page")
                 return True
             else:

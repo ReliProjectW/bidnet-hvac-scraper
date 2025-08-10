@@ -1,6 +1,6 @@
 # Web scraping and HTTP requests
 requests
-selenium
+playwright
 beautifulsoup4
 
 # PDF processing

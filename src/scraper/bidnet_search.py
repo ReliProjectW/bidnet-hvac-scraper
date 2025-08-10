@@ -9,22 +9,18 @@ import pandas as pd
 from tqdm import tqdm
 
 from config import Config
-from auth.bidnet_auth import BidNetAuthenticator
+from src.auth.bidnet_auth import BidNetAuthenticator
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.sync_api import sync_playwright
 
 class BidNetSearcher:
     def __init__(self):
         self.authenticator = BidNetAuthenticator()
         self.session = None
-        self.driver = None
+        self.page = None
+        self.browser = None
+        self.context = None
+        self.playwright = None
         self.logger = logging.getLogger(__name__)
         
     def get_authenticated_session(self):
@@ -34,23 +30,50 @@ class BidNetSearcher:
         return self.session
     
     def setup_browser(self):
-        """Set up Selenium browser for JavaScript-heavy pages"""
-        if self.driver:
-            return self.driver
+        """Set up Playwright browser for JavaScript-heavy pages"""
+        if self.browser:
+            return self.browser, self.context, self.page
             
-        chrome_options = Options()
-        if Config.BROWSER_SETTINGS.get("headless", False):  # Set to False for debugging
-            chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
+        self.playwright = sync_playwright().start()
         
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.driver.implicitly_wait(10)
+        # Launch browser with options similar to Selenium config
+        self.browser = self.playwright.chromium.launch(
+            headless=Config.BROWSER_SETTINGS.get("headless", False),
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage", 
+                "--disable-gpu"
+            ]
+        )
         
-        return self.driver
+        # Create context with user agent and viewport
+        self.context = self.browser.new_context(
+            user_agent=Config.BROWSER_SETTINGS.get("user_agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"),
+            viewport={'width': 1920, 'height': 1080}
+        )
+        
+        # Create new page
+        self.page = self.context.new_page()
+        
+        return self.browser, self.context, self.page
+    
+    def cleanup(self):
+        """Clean up Playwright resources"""
+        try:
+            if self.page:
+                self.page.close()
+                self.page = None
+            if self.context:
+                self.context.close()
+                self.context = None
+            if self.browser:
+                self.browser.close()
+                self.browser = None
+            if self.playwright:
+                self.playwright.stop()
+                self.playwright = None
+        except Exception as e:
+            self.logger.debug(f"Error during cleanup: {e}")
         
     def search_with_browser(self, keyword: str, location_filters: List[str]) -> List[Dict[str, Any]]:
         """Search using browser automation (for JavaScript-heavy sites)"""
@@ -58,42 +81,53 @@ class BidNetSearcher:
         
         try:
             # Setup browser
-            browser = self.setup_browser()
+            browser, context, page = self.setup_browser()
             
-            # Navigate to main page first, then load cookies
-            self.logger.info("Loading authentication cookies in browser...")
-            browser.get(Config.BASE_URL)
-            
-            # Load cookies from authentication
-            if hasattr(self.authenticator, 'load_cookies_to_selenium'):
-                # Update load_cookies_to_selenium to work with this driver
-                self.authenticator.driver = browser
-                self.authenticator.load_cookies_to_selenium()
+            # Navigate to main page first (cookies don't work reliably with BidNet)
+            self.logger.info("Navigating to main page (will auto-login if needed)...")
+            page.goto(Config.BASE_URL)
+            page.wait_for_load_state("networkidle")
             
             # Navigate to search page
             search_url = f"{Config.BASE_URL}private/supplier/solicitations/search"
             self.logger.info(f"Navigating to search page with browser: {search_url}")
-            browser.get(search_url)
+            page.goto(search_url)
             
             # Wait for page to load
-            time.sleep(3)
+            page.wait_for_load_state("networkidle")
+            
+            # Check current URL and page content to detect if we're on login page
+            current_url = page.url
+            self.logger.info(f"Current URL after navigation: {current_url}")
+            
+            # Update the authenticator's page reference for auto-login
+            self.authenticator.page = page
+            self.authenticator.context = context
+            self.authenticator.browser = browser
             
             # Check if we got redirected to login page and handle it
-            if not self.authenticator.auto_login_if_needed(browser):
-                self.logger.error("Auto-login failed")
-                return contracts
-            
-            # If we had to login, navigate to search page again
-            if browser.current_url != search_url:
-                self.logger.info("Re-navigating to search page after login")
-                browser.get(search_url)
-                time.sleep(3)
-            
-            # Wait for page to load (reduced timeout)
-            wait = WebDriverWait(browser, 5)
+            if self.authenticator.is_login_page(page):
+                self.logger.info("🔑 Login page detected - performing auto-login...")
+                if not self.authenticator.auto_login_if_needed(page):
+                    self.logger.error("❌ Auto-login failed")
+                    return contracts
+                
+                # After successful login, navigate back to search page
+                self.logger.info("✅ Auto-login successful, navigating to search page...")
+                page.goto(search_url)
+                page.wait_for_load_state("networkidle")
+                
+                # Verify we're now on the search page
+                if self.authenticator.is_login_page(page):
+                    self.logger.error("❌ Still on login page after auto-login attempt")
+                    return contracts
+                    
+                self.logger.info("✅ Successfully reached search page after login")
+            else:
+                self.logger.info("✅ Already on search page, no login needed")
             
             # Look for search input fields
-            search_field = None
+            search_element = None
             search_selectors = [
                 'textarea#solicitationSingleBoxSearch',  # BidNet specific main search
                 'textarea[name="keywords"]',              # BidNet specific
@@ -113,32 +147,35 @@ class BidNetSearcher:
             
             for selector in search_selectors:
                 try:
-                    search_field = browser.find_element(By.CSS_SELECTOR, selector)
-                    break
-                except NoSuchElementException:
+                    if page.locator(selector).first.is_visible(timeout=5000):
+                        search_element = page.locator(selector).first
+                        break
+                except:
                     continue
                     
-            if search_field:
+            if search_element:
                 self.logger.info(f"Found search field, entering keyword: {keyword}")
-                # Wait for field to be clickable and clear
+                # Clear and fill the search field
                 try:
-                    wait.until(EC.element_to_be_clickable(search_field))
-                    search_field.clear()
-                    time.sleep(1)  # Small pause after clear
-                    search_field.send_keys(keyword)
+                    search_element.clear()
+                    search_element.fill(keyword)
                 except Exception as e:
                     self.logger.error(f"Failed to enter search term: {str(e)}")
                     # Try JavaScript input as fallback
-                    browser.execute_script(f"arguments[0].value = '{keyword}';", search_field)
+                    page.evaluate(f"document.querySelector('{search_selectors[0]}').value = '{keyword}'")
+                
+                # For now, skip complex filter handling and just do basic search
+                # (California filtering can be added back later once basic search works)
+                self.logger.info("Skipping location filters for initial test - will search all locations")
                 
                 # Look for search button
-                search_button = None
+                search_button_element = None
                 button_selectors = [
                     'button#topSearchButton',                 # BidNet specific
                     'button.topSearch',                       # BidNet specific  
                     'button[type="submit"]',
                     'input[type="submit"]',
-                    'button:contains("Search")',
+                    'button:has-text("Search")',
                     '.search-button',
                     '#searchButton',
                     '[data-testid*="search"]'
@@ -146,39 +183,30 @@ class BidNetSearcher:
                 
                 for selector in button_selectors:
                     try:
-                        if 'contains' in selector:
-                            search_button = browser.find_element(By.XPATH, "//button[contains(text(), 'Search')]")
-                        else:
-                            search_button = browser.find_element(By.CSS_SELECTOR, selector)
-                        break
-                    except NoSuchElementException:
+                        if page.locator(selector).first.is_visible(timeout=2000):
+                            search_button_element = page.locator(selector).first
+                            break
+                    except:
                         continue
                 
-                if search_button:
+                if search_button_element:
                     self.logger.info("Clicking search button...")
-                    search_button.click()
+                    search_button_element.click()
                 else:
-                    # Try pressing Enter
-                    from selenium.webdriver.common.keys import Keys
-                    search_field.send_keys(Keys.RETURN)
+                    # Try pressing Enter on search field
+                    if search_element:
+                        search_element.press("Enter")
                 
-                # Wait for results to load (reduced)
-                time.sleep(2)
+                # Wait for results to load 
+                page.wait_for_load_state("networkidle")
                 
-                # Save the results page
-                results_html = browser.page_source
-                debug_file = f"{Config.DATA_DIR}/debug_browser_results.html"
-                with open(debug_file, 'w', encoding='utf-8') as f:
-                    f.write(results_html)
-                self.logger.info(f"Saved browser results HTML: {debug_file}")
-                
-                # Parse results with our existing parser
-                contracts = self._parse_search_results(results_html, keyword)
+                # Get all results across all pages
+                contracts = self._get_all_paginated_results(page, keyword)
                 
             else:
                 self.logger.warning("Could not find search field on page")
                 # Save the page for debugging
-                page_html = browser.page_source
+                page_html = page.content()
                 debug_file = f"{Config.DATA_DIR}/debug_search_page_browser.html"
                 with open(debug_file, 'w', encoding='utf-8') as f:
                     f.write(page_html)
@@ -188,9 +216,7 @@ class BidNetSearcher:
             self.logger.error(f"Browser search failed for '{keyword}': {str(e)}")
         
         finally:
-            if self.driver:
-                self.driver.quit()
-                self.driver = None
+            self.cleanup()
                 
         return contracts
     
@@ -242,6 +268,107 @@ class BidNetSearcher:
         self.logger.info(f"Found {len(all_contracts)} total contracts")
         return all_contracts[:max_results]
     
+    def _get_all_paginated_results(self, page, keyword: str) -> List[Dict[str, Any]]:
+        """Get results from all pages of search results"""
+        all_contracts = []
+        page_num = 1
+        max_pages = 20  # Safety limit
+        
+        while page_num <= max_pages:
+            self.logger.info(f"Processing page {page_num} of results...")
+            
+            # Save current page source for debugging
+            debug_file = f"{Config.DATA_DIR}/debug_browser_results_page_{page_num}.html"
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(page.content())
+            self.logger.info(f"Saved page {page_num} HTML: {debug_file}")
+            
+            # Parse results from current page
+            page_contracts = self._parse_search_results(page.content(), keyword)
+            
+            # Debug: Check how many total rows exist vs how many we extracted
+            try:
+                all_rows = page.locator('tr[class*="mets-table-row"]').all()
+                all_odd_rows = page.locator('tr.mets-table-row.odd').all()
+                all_even_rows = page.locator('tr.mets-table-row.even').all()
+                self.logger.info(f"📊 Page {page_num} debug - Total rows: {len(all_rows)}, Odd: {len(all_odd_rows)}, Even: {len(all_even_rows)}, Extracted: {len(page_contracts)}")
+            except Exception as e:
+                self.logger.debug(f"Could not count page rows: {e}")
+            
+            if not page_contracts:
+                self.logger.info(f"No contracts found on page {page_num}, ending pagination")
+                break
+                
+            all_contracts.extend(page_contracts)
+            self.logger.info(f"Found {len(page_contracts)} contracts on page {page_num} (total: {len(all_contracts)})")
+            
+            # Look for next page button with more comprehensive selectors
+            next_button = None
+            next_selectors = [
+                'a[rel="next"]',                                 # Most common "next" attribute
+                'a[class*="next"]',                             # Class contains "next"
+                'a[title*="Next"]',                             # Title contains "Next"
+                'a[aria-label*="Next"]',                        # Aria label contains "Next"
+                f'a[href*="pageNumber={page + 1}"]',           # Direct page number link
+                '.mets-pagination-page-icon.next',             # BidNet specific pagination
+                'a.next',                                       # Simple next class
+                'button[title*="Next"]',
+                '.pagination a:contains("Next")',
+                '[data-testid="next"]'
+            ]
+            
+            for selector in next_selectors:
+                try:
+                    if 'contains' in selector:
+                        # Use text-based selector for Playwright
+                        next_button = page.locator("text=Next").first
+                    else:
+                        next_button = page.locator(selector).first
+                    
+                    if next_button.is_visible(timeout=2000):
+                        self.logger.info(f"Found next page button: {selector}")
+                        break
+                    else:
+                        next_button = None
+                except Exception as e:
+                    self.logger.debug(f"Next button selector '{selector}' failed: {e}")
+                    continue
+            
+            if next_button:
+                try:
+                    # Scroll to button and click
+                    next_button.scroll_into_view_if_needed()
+                    time.sleep(1)
+                    
+                    # Try clicking the button
+                    next_button.click()
+                    time.sleep(3)  # Wait for page to load
+                    page_num += 1
+                except Exception as e:
+                    self.logger.error(f"Failed to click next page button: {e}")
+                    break
+            else:
+                # Try alternative: look for direct page number links
+                try:
+                    next_page_link = page.locator(f"text={page_num + 1}").first
+                    if next_page_link.is_visible(timeout=2000):
+                        self.logger.info(f"Found direct page {page_num + 1} link")
+                        next_page_link.scroll_into_view_if_needed()
+                        time.sleep(1)
+                        next_page_link.click()
+                        time.sleep(3)
+                        page_num += 1
+                        continue
+                except Exception as e:
+                    self.logger.debug(f"No direct page link found: {e}")
+                
+                self.logger.info(f"No more pages found after page {page_num}")
+                break
+        
+        self.logger.info(f"Pagination complete: collected {len(all_contracts)} contracts from {page_num} pages")
+        return all_contracts
+    
+
     def _search_single_keyword(self, session: requests.Session, keyword: str, 
                               location_filters: List[str]) -> List[Dict[str, Any]]:
         """
@@ -401,10 +528,10 @@ class BidNetSearcher:
             
             # BidNet-specific selectors based on page inspector analysis
             contract_selectors = [
-                # Primary: Table rows found by inspector (most likely contract listings)
-                'tr.mets-table-row.odd',
-                'tr.even.mets-table-row', 
-                'tr[class*="mets-table-row"]',
+                # Primary: All table rows (both odd and even)
+                'tr[class*="mets-table-row"]',               # Gets BOTH odd and even rows
+                'tr.mets-table-row',                         # Any mets-table-row
+                'tr.mets-table-row.odd, tr.mets-table-row.even',  # Explicit odd + even
                 
                 # Secondary: General table patterns
                 'tbody tr',

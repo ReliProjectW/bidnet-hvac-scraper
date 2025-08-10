@@ -25,32 +25,7 @@ class Config:
             "Imperial County, CA"
         ],
         "target_keywords": [
-            # HVAC Systems
-            "HVAC system replacement",
-            "HVAC system installation", 
-            "HVAC installation",
-            "HVAC replacement",
-            
-            # Specific Equipment
-            "split system",
-            "heat pump",
-            "heat pump replacement",
-            "heat pump installation",
-            "air conditioner",
-            "air conditioning unit",
-            "AC unit",
-            "mini-split",
-            "mini split",
-            "furnace",
-            "air handler",
-            
-            # Installation/Replacement Terms
-            "install",
-            "installation", 
-            "replace",
-            "replacement",
-            "new HVAC",
-            "HVAC upgrade"
+            "hvac"
         ],
         "negative_keywords": [
             # Geothermal (exclude)
@@ -84,7 +59,7 @@ class Config:
     # File paths
     DATA_DIR = "data"
     RAW_DATA_DIR = os.path.join(DATA_DIR, "raw")
-    PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed") 
+    PROCESSED_DATA_DIR = os.path.expanduser("~/Documents/hvacscraper") 
     LOGS_DIR = "logs"
     
     # Download settings
