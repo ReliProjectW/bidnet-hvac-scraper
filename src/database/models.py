@@ -13,6 +13,37 @@ class ProcessingStatus(enum.Enum):
     FAILED = "failed"
     SKIPPED = "skipped"
 
+class PortalType(enum.Enum):
+    PLANETBIDS = "planetbids"
+    BIDSYNC = "bidsync" 
+    DEMANDSTAR = "demandstar"
+    PUBLICPURCHASE = "publicpurchase"
+    CIVICBID = "civicbid"
+    CUSTOM = "custom"
+    NONE = "none"  # No portal required
+
+class AccountStatus(enum.Enum):
+    REGISTERED = "registered"
+    NEEDS_REGISTRATION = "needs_registration" 
+    PENDING = "pending"
+    FAILED = "failed"
+    MANUAL_REQUIRED = "manual_required"
+
+class FlagStatus(enum.Enum):
+    PENDING = "pending"
+    RESOLVED = "resolved"
+    MANUAL_REQUIRED = "manual_required"
+    ABANDONED = "abandoned"
+
+class ExtractionFlagType(enum.Enum):
+    """Progressive harvest flag categories"""
+    PORTAL_REGISTRATION_NEEDED = "portal_registration_needed"
+    NAVIGATION_FAILED = "navigation_failed"
+    ACCESS_DENIED = "access_denied"
+    NO_RFP_FOUND = "no_rfp_found"
+    TECHNICAL_ERROR = "technical_error"
+    SUCCESS = "success"
+
 class SourceType(enum.Enum):
     BIDNET = "bidnet"
     CITY_WEBSITE = "city_website"
@@ -202,3 +233,213 @@ class ProcessingQueue(Base):
     # Manual selection support
     manually_selected = Column(Boolean, default=False)
     selected_by = Column(String(100))  # User who selected this task
+
+class CityPortal(Base):
+    """Track portal requirements for each city"""
+    __tablename__ = "city_portals"
+    
+    city_name = Column(String(100), primary_key=True)
+    portal_type = Column(Enum(PortalType), nullable=False)
+    portal_url = Column(String(500))
+    registration_required = Column(Boolean, default=False)
+    account_status = Column(Enum(AccountStatus), default=AccountStatus.NEEDS_REGISTRATION)
+    
+    # Discovery metadata
+    detected_date = Column(DateTime, default=datetime.utcnow)
+    last_verified = Column(DateTime)
+    detection_confidence = Column(Float, default=0.0)  # AI confidence in detection
+    
+    # Portal-specific info
+    registration_url = Column(String(500))
+    login_url = Column(String(500))
+    portal_subdomain = Column(String(100))  # e.g., "losangeles" in losangeles.planetbids.com
+    
+    # Processing tracking
+    successful_logins = Column(Integer, default=0)
+    failed_login_attempts = Column(Integer, default=0)
+    last_successful_login = Column(DateTime)
+    
+    # Notes and requirements
+    registration_notes = Column(Text)  # Special requirements, forms needed, etc.
+    business_license_required = Column(Boolean, default=False)
+    insurance_required = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PortalCredential(Base):
+    """Securely store portal login credentials"""
+    __tablename__ = "portal_credentials"
+    
+    portal_key = Column(String(200), primary_key=True)  # e.g., "losangeles_planetbids"
+    city_name = Column(String(100), nullable=False)
+    portal_type = Column(Enum(PortalType), nullable=False)
+    
+    # Credentials (should be encrypted in production)
+    username = Column(String(100))
+    password_encrypted = Column(String(500))  # Store encrypted passwords
+    email = Column(String(200))
+    
+    # Registration info
+    registration_date = Column(DateTime)
+    registration_method = Column(String(50))  # "manual", "automated", "imported"
+    registered_by = Column(String(100))  # Who registered this account
+    
+    # Verification tracking
+    last_verified = Column(DateTime)
+    verification_status = Column(Enum(AccountStatus), default=AccountStatus.PENDING)
+    verification_error = Column(Text)
+    
+    # Business info (often required for registration)
+    business_name = Column(String(200))
+    business_address = Column(Text)
+    business_phone = Column(String(50))
+    tax_id = Column(String(50))
+    
+    # Security and recovery
+    security_questions = Column(JSON)  # Store Q&A for account recovery
+    backup_email = Column(String(200))
+    password_last_changed = Column(DateTime)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class RegistrationFlag(Base):
+    """Track manual intervention needs for portal access"""
+    __tablename__ = "registration_flags"
+    
+    id = Column(Integer, primary_key=True)
+    city_name = Column(String(100), nullable=False)
+    portal_type = Column(Enum(PortalType))
+    portal_url = Column(String(500))
+    
+    # Flag details
+    flag_reason = Column(String(100))  # "registration_needed", "login_failed", "access_denied"
+    flag_description = Column(Text)
+    priority_score = Column(Integer, default=0)  # Higher = more urgent
+    estimated_manual_hours = Column(Float, default=1.0)
+    
+    # Context information
+    contract_count = Column(Integer, default=0)  # How many contracts affected
+    total_contract_value = Column(String(100))  # Estimated value of affected contracts
+    last_attempt_date = Column(DateTime)
+    error_details = Column(JSON)  # Technical error information
+    screenshot_path = Column(String(500))  # Path to error screenshot
+    
+    # Resolution tracking
+    flagged_date = Column(DateTime, default=datetime.utcnow)
+    resolution_status = Column(Enum(FlagStatus), default=FlagStatus.PENDING)
+    resolved_date = Column(DateTime)
+    resolved_by = Column(String(100))
+    resolution_notes = Column(Text)
+    
+    # Follow-up actions
+    next_retry_date = Column(DateTime)
+    max_retries = Column(Integer, default=3)
+    current_retry_count = Column(Integer, default=0)
+
+class PortalPattern(Base):
+    """Store successful portal navigation patterns for reuse"""
+    __tablename__ = "portal_patterns"
+    
+    id = Column(Integer, primary_key=True)
+    portal_type = Column(Enum(PortalType), nullable=False)
+    pattern_name = Column(String(100))  # e.g., "planetbids_generic_v1"
+    
+    # Navigation patterns
+    login_selectors = Column(JSON)  # CSS selectors for login form
+    navigation_flow = Column(JSON)  # Step-by-step navigation instructions
+    document_selectors = Column(JSON)  # How to find downloadable documents
+    search_patterns = Column(JSON)  # How to search for specific RFPs
+    
+    # Success tracking
+    success_rate = Column(Float, default=0.0)
+    total_attempts = Column(Integer, default=0)
+    successful_attempts = Column(Integer, default=0)
+    last_successful_use = Column(DateTime)
+    
+    # Pattern metadata
+    created_from_city = Column(String(100))  # Which city this pattern was learned from
+    works_with_cities = Column(JSON)  # List of cities where this pattern works
+    pattern_confidence = Column(Float, default=0.0)
+    
+    # Versioning and updates
+    pattern_version = Column(String(20), default="1.0")
+    replaced_by_pattern_id = Column(Integer)  # If pattern was updated
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PortalSession(Base):
+    """Track portal login sessions and activity"""
+    __tablename__ = "portal_sessions"
+    
+    id = Column(Integer, primary_key=True)
+    portal_key = Column(String(200), nullable=False)  # References portal_credentials
+    session_start = Column(DateTime, default=datetime.utcnow)
+    session_end = Column(DateTime)
+    
+    # Session details
+    login_successful = Column(Boolean, default=False)
+    documents_accessed = Column(Integer, default=0)
+    documents_downloaded = Column(Integer, default=0)
+    contracts_processed = Column(Integer, default=0)
+    
+    # Technical details
+    user_agent = Column(String(500))
+    session_cookies = Column(JSON)  # Store session cookies for reuse
+    ip_address = Column(String(50))
+    
+    # Error tracking
+    errors_encountered = Column(JSON)
+    session_status = Column(Enum(ProcessingStatus), default=ProcessingStatus.IN_PROGRESS)
+    error_message = Column(Text)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class ExtractionAttempt(Base):
+    """Track progressive harvest extraction attempts"""
+    __tablename__ = "extraction_attempts"
+    
+    id = Column(Integer, primary_key=True)
+    contract_id = Column(Integer, ForeignKey("contracts.id"), nullable=False)
+    
+    # Attempt details
+    attempt_date = Column(DateTime, default=datetime.utcnow)
+    extraction_flag_type = Column(Enum(ExtractionFlagType), nullable=False)
+    
+    # URLs and navigation
+    target_url = Column(String(500))  # City RFP page URL
+    rfp_page_found = Column(Boolean, default=False)
+    documents_found_count = Column(Integer, default=0)
+    documents_downloaded_count = Column(Integer, default=0)
+    
+    # Flag details
+    flag_reason = Column(String(500))  # Specific reason for flag
+    flag_description = Column(Text)    # Detailed description
+    technical_details = Column(JSON)   # Error messages, selectors tried, etc.
+    
+    # Portal detection results
+    portal_type = Column(Enum(PortalType))
+    portal_url = Column(String(500))
+    registration_required = Column(Boolean, default=False)
+    
+    # Success data (if successful)
+    pdf_files_found = Column(JSON)     # List of found PDF files
+    pdf_download_paths = Column(JSON)  # Local paths of downloaded files
+    extracted_data = Column(JSON)      # Any additional data extracted
+    
+    # Processing metadata
+    ai_cost_estimate = Column(Float, default=0.0)
+    processing_time_seconds = Column(Float)
+    retry_count = Column(Integer, default=0)
+    
+    # Priority for resolution (1-100, higher = more urgent)
+    resolution_priority = Column(Integer, default=50)
+    
+    # Relationships
+    contract = relationship("Contract")
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

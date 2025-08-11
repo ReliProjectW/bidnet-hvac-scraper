@@ -23,10 +23,15 @@ geopy
 scikit-learn
 
 # API clients (for future AI agent integration)
-requests
 httpx
+anthropic
+openai
 
-# Utilities
-tqdm
+# CLI and interface libraries
+rich
 click
+tqdm
 tabulate
+
+# Additional utilities for hybrid system and portal authentication
+cryptography  # For secure credential storage

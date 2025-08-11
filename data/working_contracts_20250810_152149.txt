@@ -1,0 +1,179 @@
+WORKING HVAC CONTRACTS EXTRACTION (Fixed Structure)\nTotal Contracts: 25\nExtraction Time: 2025-08-10 15:21:49.594481\n====================================================================================================\n\nContract 1:\n  Row Index: 0\n  Title: Mid-Wilshire Medical Office Building Seismic and Program Improvements -
+HVAC\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443612578366\n  Full Text Sample: 	
+Mid-Wilshire Medical Office Building Seismic and Program Improvements -
+HVAC
+University of California, Los Angeles (UCLA)
+State & Local Bids
+The proposed seismic work will include the installation o\n  Extracted: 2025-08-10T15:21:49.229189\n----------------------------------------------------------------------------------------------------\nContract 2:\n  Row Index: 1\n  Title: Senior Center Roof &
+HVAC
+Replacement\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443612145885\n  Full Text Sample: 	
+Senior Center Roof &
+HVAC
+Replacement
+City of Turlock
+State & Local Bids
+Replacement of the Senior Center flat roof and select HVAC units as indicated in the specifications and other associated work\n  Extracted: 2025-08-10T15:21:49.239073\n----------------------------------------------------------------------------------------------------\nContract 3:\n  Row Index: 2\n  Title: USACE SPK - Fort Hunter Liggett (FHL) Hacienda
+HVAC
+Geothermal Heat Pump Renovation\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/2623753697\n  Full Text Sample: 	
+USACE SPK - Fort Hunter Liggett (FHL) Hacienda
+HVAC
+Geothermal Heat Pump Renovation
+California Federal Notification Required
+Federal Bids
+USACE SPK anticipates a potential requirement for design-bui\n  Extracted: 2025-08-10T15:21:49.247623\n----------------------------------------------------------------------------------------------------\nContract 4:\n  Row Index: 3\n  Title: HVAC
+Toolbox\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/2622696722\n  Full Text Sample: 	
+HVAC
+Toolbox
+California Federal Notification Required
+Federal Bids
+This is a Combined Synopsis/Solicitation for the acquisition for HVAC Toolbox. Please see attached Statement of Requirements (SOR) \n  Extracted: 2025-08-10T15:21:49.255318\n----------------------------------------------------------------------------------------------------\nContract 5:\n  Row Index: 4\n  Title: Treatment
+HVAC
+Upgrades Design\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443606116157\n  Full Text Sample: 	
+Treatment
+HVAC
+Upgrades Design
+Goleta Water District
+State & Local Bids
+The Goleta Water District is seeking proposals from highly qualified consultants to provide professional services to design a \n  Extracted: 2025-08-10T15:21:49.263562\n----------------------------------------------------------------------------------------------------\nContract 6:\n  Row Index: 5\n  Title: FILTER - AIR,
+HVAC
+, PLEATED, 27-3/4 X 7 X 2\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443609076388\n  Full Text Sample: 	
+FILTER - AIR,
+HVAC
+, PLEATED, 27-3/4 X 7 X 2
+Los Angeles County Metro Transit Authority
+State & Local Bids
+FILTER - AIR, HVAC, PLEATED, 27-3/4 X 7 X 2 APPROVED MFR: ADVANCED FILTRATION CONCEPTS APPR\n  Extracted: 2025-08-10T15:21:49.270650\n----------------------------------------------------------------------------------------------------\nContract 7:\n  Row Index: 6\n  Title: CHP RIVERSIDE AREA OFFICE
+HVAC
+MAINTENANCE SERVICES\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443608915776\n  Full Text Sample: 	
+CHP RIVERSIDE AREA OFFICE
+HVAC
+MAINTENANCE SERVICES
+State of California - California Highway Patrol (CHP)
+State & Local Bids
+equipment, labor, personnel, and supervision; pay all taxes, insurance, b\n  Extracted: 2025-08-10T15:21:49.277500\n----------------------------------------------------------------------------------------------------\nContract 8:\n  Row Index: 7\n  Title: ARC PE MEN LOCKER ROOM
+HVAC
+IMPROVEMENT\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443606015838\n  Full Text Sample: 	
+ARC PE MEN LOCKER ROOM
+HVAC
+IMPROVEMENT
+Los Rios Community College District
+State & Local Bids
+The work shall consist of, but not limited to the installation of new Spilt Air Conditioning system, as\n  Extracted: 2025-08-10T15:21:49.284117\n----------------------------------------------------------------------------------------------------\nContract 9:\n  Row Index: 8\n  Title: Senior Activity Center
+HVAC
+Replacement CIP FC019\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443606116178\n  Full Text Sample: 	
+Senior Activity Center
+HVAC
+Replacement CIP FC019
+City of San Marcos
+State & Local Bids
+The work generally consists of replacement of HVAC system at the Senior Activity Center. A detailed Scope of W\n  Extracted: 2025-08-10T15:21:49.290810\n----------------------------------------------------------------------------------------------------\nContract 10:\n  Row Index: 9\n  Title: The Normandy – 1155 Ellis Street Housing\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443601246796\n  Full Text Sample: 	
+The Normandy – 1155 Ellis Street Housing
+City and County of San Francisco
+State & Local Bids
+Sheet Metal Flashing; Doors and Hardware; Finish Carpentry, Tile, Drywall; Flooring; Painting; Janitorial\n  Extracted: 2025-08-10T15:21:49.298939\n----------------------------------------------------------------------------------------------------\nContract 11:\n  Row Index: 10\n  Title: FILTER - A/C RETURN AIR\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443605916802\n  Full Text Sample: 	
+FILTER - A/C RETURN AIR
+Los Angeles County Metro Transit Authority
+State & Local Bids
+METRO P/N: 195944 DESCRIPTION: FILTER - A/C RETURN AIR, ENC MERV 13 RETROFIT, HVAC RETURN AIR GRILL, 2 EA/BUS AP\n  Extracted: 2025-08-10T15:21:49.305291\n----------------------------------------------------------------------------------------------------\nContract 12:\n  Row Index: 11\n  Title: Water Distribution and Facilities Condition Assessment\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443603226507\n  Full Text Sample: 	
+Water Distribution and Facilities Condition Assessment
+City of El Segundo
+State & Local Bids
+• Mechanical systems, HVAC, exhaust, ventilation, controls and instrumentation. • Electrical systems, bot\n  Extracted: 2025-08-10T15:21:49.311592\n----------------------------------------------------------------------------------------------------\nContract 13:\n  Row Index: 12\n  Title: "VSS Split
+HVAC
+Package" Site visit 8/13\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/2621215427\n  Full Text Sample: 	
+"VSS Split
+HVAC
+Package" Site visit 8/13
+California Federal Notification Required
+Federal Bids
+To install an 18,000 Btuh Split HVAC package unit in Video Surveillance Room 1221. Refer to soliciation\n  Extracted: 2025-08-10T15:21:49.317780\n----------------------------------------------------------------------------------------------------\nContract 14:\n  Row Index: 13\n  Title: WELL 15 EQUIPPING PROJECT\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443597949105\n  Full Text Sample: 	
+WELL 15 EQUIPPING PROJECT
+City of Santa Maria
+State & Local Bids
+, miscellaneous electrical apparatuses, building and exterior well site electrical, lighting and intrusion monitoring, installing rem\n  Extracted: 2025-08-10T15:21:49.323910\n----------------------------------------------------------------------------------------------------\nContract 15:\n  Row Index: 14\n  Title: K-Dock Restroom Renovation Project\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443597713715\n  Full Text Sample: 	
+K-Dock Restroom Renovation Project
+City of Berkeley
+State & Local Bids
+toilet facilities for public use while existing restroom is closed for construction, new perforated panels, doors, interior wal\n  Extracted: 2025-08-10T15:21:49.330282\n----------------------------------------------------------------------------------------------------\nContract 16:\n  Row Index: 15\n  Title: HVAC
+MAINTENANCE, SERVICE, AND REPAIR JOB ORDER CONTRACT\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443599224353\n  Full Text Sample: 	
+HVAC
+MAINTENANCE, SERVICE, AND REPAIR JOB ORDER CONTRACT
+City of Monterey
+State & Local Bids
+locations as outlined in the Technical Specifications of Part IV of these bid documents, as well as troub\n  Extracted: 2025-08-10T15:21:49.336374\n----------------------------------------------------------------------------------------------------\nContract 17:\n  Row Index: 16\n  Title: HWD Admin Office Server Room
+HVAC
+Replacement\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/open-solicitation/7363221807?target=view\n  Full Text Sample: 	
+HWD Admin Office Server Room
+HVAC
+Replacement
+Helix Water District
+Member Agency Bids
+	
+CALENDAR
+CLOSING DATE
+08/15/2025 10:00 AM PDT
+LOCATION
+LOCATION
+California
+Published Date  07/30/2025\n  Extracted: 2025-08-10T15:21:49.342420\n----------------------------------------------------------------------------------------------------\nContract 18:\n  Row Index: 17\n  Title: Engineering and Design Services for Fire Station 45
+HVAC
+Replacement Project\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443599059291\n  Full Text Sample: 	
+Engineering and Design Services for Fire Station 45
+HVAC
+Replacement Project
+City of West Sacramento
+State & Local Bids
+provide professional engineering and design services in support of the design \n  Extracted: 2025-08-10T15:21:49.348597\n----------------------------------------------------------------------------------------------------\nContract 19:\n  Row Index: 18\n  Title: Marin County Juvenile Hall
+HVAC
+Replacement\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443595285520\n  Full Text Sample: 	
+Marin County Juvenile Hall
+HVAC
+Replacement
+County of Marin
+State & Local Bids
+The purpose of this project is to replace the existing HVAC systems at Marin County's Juvenile Hall facility.
+Mandatory\n  Extracted: 2025-08-10T15:21:49.354753\n----------------------------------------------------------------------------------------------------\nContract 20:\n  Row Index: 19\n  Title: Statewide All-Electric, Non-Residential Heating, Ventilation and Air Conditioning (
+HVAC
+) Program\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443593406217\n  Full Text Sample: 	
+Statewide All-Electric, Non-Residential Heating, Ventilation and Air Conditioning (
+HVAC
+) Program
+Pacific Gas and Electric
+State & Local Bids
+PG&E, acting on behalf of the funding IOUs2, is issuing\n  Extracted: 2025-08-10T15:21:49.361008\n----------------------------------------------------------------------------------------------------\nContract 21:\n  Row Index: 20\n  Title: Replace
+HVAC
+building 2275\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/2619742292\n  Full Text Sample: 	
+Replace
+HVAC
+building 2275
+California Federal Notification Required
+Federal Bids
+Amendment 3 has been uploaded as of 8 August. Amendment 2 has been uploaded as of 3 August. Amendment 1 has been uplo\n  Extracted: 2025-08-10T15:21:49.367124\n----------------------------------------------------------------------------------------------------\nContract 22:\n  Row Index: 21\n  Title: Training Room Buildout Project\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443593476087\n  Full Text Sample: 	
+Training Room Buildout Project
+State of California - Employment Development Department
+State & Local Bids
+• Install (N) mini-split heat pump HVAC system. • Patch as needed and paint the whole new sp\n  Extracted: 2025-08-10T15:21:49.373081\n----------------------------------------------------------------------------------------------------\nContract 23:\n  Row Index: 22\n  Title: Aeration Blower System Improvements Project\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443597980467\n  Full Text Sample: 	
+Aeration Blower System Improvements Project
+South Tahoe Public Utilities District
+State & Local Bids
+MCCs, a new fire alarm control panel for the Blower Building, replacement of other electrical gea\n  Extracted: 2025-08-10T15:21:49.379160\n----------------------------------------------------------------------------------------------------\nContract 24:\n  Row Index: 23\n  Title: Moffitt/Long Hospital L355 CT Scan Replacement -
+HVAC
+& Controls\n  Agency: Unknown Agency\n  Location: California\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443597610434\n  Full Text Sample: 	
+Moffitt/Long Hospital L355 CT Scan Replacement -
+HVAC
+& Controls
+University of California, San Francisco (UCSF)
+State & Local Bids
+No additional specifications were given.
+	
+CALENDAR
+CLOSING DATE
+08\n  Extracted: 2025-08-10T15:21:49.385151\n----------------------------------------------------------------------------------------------------\nContract 25:\n  Row Index: 24\n  Title: Harding Center Refurbishment -
+HVAC
+Installation\n  Agency: Unknown Agency\n  Location: Unknown Location\n  Due Date: Unknown Date\n  URL: https://www.bidnetdirect.com/private/supplier/interception/view-notice/443597980457\n  Full Text Sample: 	
+Harding Center Refurbishment -
+HVAC
+Installation
+City of Carlsbad
+State & Local Bids
+labor, materials, tools, services, transportation, permits, utilities, and all other items necessary to complete \n  Extracted: 2025-08-10T15:21:49.391456\n----------------------------------------------------------------------------------------------------\n
